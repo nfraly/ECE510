@@ -1,0 +1,55 @@
+Function,and
+Trained Weights and Bias,
+Weight1,5.479615
+Weight2,5.479251
+Bias,-8.311169
+Input1,Input2,Output
+0,0,0.0002
+0,1,0.0556
+1,0,0.0556
+1,1,0.9339
+
+Function,or
+Trained Weights and Bias,
+Weight1,6.178801
+Weight2,6.178919
+Bias,-2.843127
+Input1,Input2,Output
+0,0,0.0550
+0,1,0.9656
+1,0,0.9656
+1,1,0.9999
+
+Function,nand
+Trained Weights and Bias,
+Weight1,-5.478727
+Weight2,-5.478363
+Bias,8.309841
+Input1,Input2,Output
+0,0,0.9998
+0,1,0.9444
+1,0,0.9443
+1,1,0.0662
+
+Function,nor
+Trained Weights and Bias,
+Weight1,-6.177789
+Weight2,-6.178102
+Bias,2.842661
+Input1,Input2,Output
+0,0,0.9449
+0,1,0.0344
+1,0,0.0344
+1,1,0.0001
+
+Function,xor
+Trained Weights and Bias,
+Weight1,-0.025156
+Weight2,-0.012578
+Bias,0.012578
+Input1,Input2,Output
+0,0,0.5031
+0,1,0.5000
+1,0,0.4969
+1,1,0.4937
+
