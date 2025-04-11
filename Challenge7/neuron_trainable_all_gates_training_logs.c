@@ -18,48 +18,58 @@ double mse(double output, double target) {
 
 void print_help(char *program_name) {
     printf("Usage: %s [--func xor|nand|and|or|nor|all]\n", program_name);
-    printf("\nOptions:\n");
-    printf("  --func xor     Train on XOR function (default)\n");
-    printf("  --func nand    Train on NAND function\n");
-    printf("  --func and     Train on AND function\n");
-    printf("  --func or      Train on OR function\n");
-    printf("  --func nor     Train on NOR function\n");
-    printf("  --func all     Train on ALL gates sequentially (XOR last)\n");
-    printf("  -h             Show help message\n");
+    printf("Options:\n");
+    printf("  --func xor, nand, and, or, nor, all\n");
 }
 
-void train_and_output(const char* func_name, double data[4][3]) {
-    double weight1 = 0.5, weight2 = -0.3, bias = 0.1, learning_rate = 0.1;
-    int epochs = 10000, samples = 4;
+void output_points(const char *gate, double data[4][3]) {
+    char filename[64];
+    snprintf(filename, sizeof(filename), "points_%s.csv", gate);
+    FILE *fp = fopen(filename, "w");
+    fprintf(fp, "Input1,Input2,Target\n");
+    for (int i = 0; i < 4; i++) {
+        fprintf(fp, "%.0f,%.0f,%.0f\n", data[i][0], data[i][1], data[i][2]);
+    }
+    fclose(fp);
+}
 
-    printf("Training on %s function\n", func_name);
+void train_and_output(const char* gate, double data[4][3]) {
+    double w1 = 0.5, w2 = -0.3, b = 0.1, lr = 0.1;
+    int epochs = 10000;
 
     char filename[64];
-    snprintf(filename, sizeof(filename), "%s_training_log.csv", func_name);
-    FILE *logfile = fopen(filename, "w");
-    fprintf(logfile, "Epoch,Weight1,Weight2,Bias\n");
+    snprintf(filename, sizeof(filename), "lines_%s.csv", gate);
+    FILE *lines = fopen(filename, "w");
+    char logname[64];
+    snprintf(logname, sizeof(logname), "training_log_%s.csv", gate);
+    FILE *log = fopen(logname, "w");
+    fprintf(log, "Epoch,Weight1,Weight2,Bias\n");
+    fprintf(lines, "Epoch,Slope,Intercept\n");
 
     for (int e = 0; e < epochs; e++) {
-        for (int i = 0; i < samples; i++) {
-            double input1 = data[i][0], input2 = data[i][1], target = data[i][2];
-            double z = (input1 * weight1) + (input2 * weight2) + bias;
+        for (int i = 0; i < 4; i++) {
+            double in1 = data[i][0], in2 = data[i][1], target = data[i][2];
+            double z = in1 * w1 + in2 * w2 + b;
             double output = sigmoid(z);
             double error = output - target;
             double delta = error * sigmoid_derivative(output);
-            weight1 -= learning_rate * delta * input1;
-            weight2 -= learning_rate * delta * input2;
-            bias    -= learning_rate * delta;
+            w1 -= lr * delta * in1;
+            w2 -= lr * delta * in2;
+            b  -= lr * delta;
         }
-        fprintf(logfile, "%d,%.6f,%.6f,%.6f\n", e, weight1, weight2, bias);
+        double slope = -w1 / w2;
+        double intercept = -b / w2;
+        fprintf(lines, "%d,%.6f,%.6f\n", e, slope, intercept);
+        fprintf(log, "%d,%.6f,%.6f,%.6f\n", e, w1, w2, b);
     }
-
-    fclose(logfile);
+    fclose(lines);
+    fclose(log);
 }
 
 int main(int argc, char *argv[]) {
-    double data[4][3];
     char func[10] = "xor";
     int all = 0;
+    double data[4][3];
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0) {
@@ -67,16 +77,13 @@ int main(int argc, char *argv[]) {
             return 0;
         } else if (strcmp(argv[i], "--func") == 0 && i + 1 < argc) {
             i++;
-            if (strcmp(argv[i], "all") == 0) {
-                all = 1;
-            } else {
-                strcpy(func, argv[i]);
-            }
+            if (strcmp(argv[i], "all") == 0) all = 1;
+            else strcpy(func, argv[i]);
         }
     }
 
     const char* gates[] = {"and", "or", "nand", "nor", "xor"};
-    const int gate_count = all ? 5 : 1;
+    int gate_count = all ? 5 : 1;
 
     for (int g = 0; g < gate_count; g++) {
         if (!all) strcpy(func, gates[4]);
@@ -99,10 +106,9 @@ int main(int argc, char *argv[]) {
             memcpy(data, temp, sizeof(temp));
         }
 
+        output_points(func, data);
         train_and_output(func, data);
     }
-
-    printf("Training complete. Training logs written as <gate>_training_log.csv\n");
 
     return 0;
 }
