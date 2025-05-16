@@ -1,10 +1,12 @@
-
 # Q-Learning with GPU support in PyTorch
 # Includes both single-episode and batched parallel episode versions
 
 import torch
 import random
 import matplotlib.pyplot as plt
+import time
+import subprocess
+import sys
 
 # Environment configuration
 BOARD_ROWS = 5
@@ -97,21 +99,38 @@ def q_learning_batch(episodes, batch_size):
         rewards_per_episode.append(episode_rewards.mean().item())
     return rewards_per_episode
 
-def plot_rewards(reward_list, title):
-    plt.plot(reward_list)
-    plt.title(title)
-    plt.xlabel("Episode")
-    plt.ylabel("Total Reward")
-    plt.grid(True)
-    plt.show()
+def benchmark():
+    Q.zero_()
+    start_time = time.time()
+    q_learning_single(1000)
+    single_time = time.time() - start_time
+
+    Q.zero_()
+    start_time = time.time()
+    q_learning_batch(500, batch_size=32)
+    batch_time = time.time() - start_time
+
+    result_text = f"GPU Version:\n" \
+                  f"Single-episode runtime: {single_time:.4f} seconds\n" \
+                  f"Batched-episode runtime: {batch_time:.4f} seconds\n\n"
+
+    print(result_text)
+    print("Results written to benchmark_results.txt")
+    with open("benchmark_results.txt", "w") as f:
+        f.write("GPU Benchmark Timing Results")
+        f.write("-----------------------------")
+        f.write(result_text)
+
+    # Run CPU version as subprocess and append output
+    try:
+        result = subprocess.run([sys.executable, "q_learning_original.py"], capture_output=True, text=True, timeout=300)
+        with open("benchmark_results.txt", "a") as f:
+            f.write("CPU Version (q_learning_original.py output):\n")
+            f.write(result.stdout)
+    except Exception as e:
+        with open("benchmark_results.txt", "a") as f:
+            f.write(f"Error running CPU version: {str(e)}\n")
 
 if __name__ == "__main__":
-    print("Running single-episode Q-learning on GPU")
-    Q.zero_()
-    rewards1 = q_learning_single(1000)
-    plot_rewards(rewards1, "Single Episode Q-learning")
+    benchmark()
 
-    print("Running batched Q-learning on GPU")
-    Q.zero_()
-    rewards2 = q_learning_batch(500, batch_size=32)
-    plot_rewards(rewards2, "Batched Q-learning (batch size = 32)")

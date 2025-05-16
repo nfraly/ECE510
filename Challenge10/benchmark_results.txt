@@ -1,4 +1,13 @@
-Single-episode runtime: 1.2345 seconds
-Batched-episode runtime: 0.4567 seconds
-CPU version runtime: 0.4098 seconds
-CPU version runtime: 0.4268 seconds
+GPU Benchmark Timing Results-----------------------------GPU Version:
+Single-episode runtime: 0.5474 seconds
+Batched-episode runtime: 6.9514 seconds
+
+CPU Version (q_learning_original.py output):
+CPU version runtime: 0.5507 seconds
+GPU Version:
+Single-episode runtime: 0.5474 seconds
+Batched-episode runtime: 6.9514 seconds
+
+
+Results written to benchmark_results.txt
+CPU version runtime: 0.4557 seconds
