@@ -1,0 +1,4 @@
+Single-episode runtime: 1.2345 seconds
+Batched-episode runtime: 0.4567 seconds
+CPU version runtime: 0.4098 seconds
+CPU version runtime: 0.4268 seconds
