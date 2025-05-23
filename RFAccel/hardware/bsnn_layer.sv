@@ -8,7 +8,7 @@ module bsnn_layer #(
     input  logic rst,
     input  logic valid,
     input  logic [WIDTH-1:0] input_bits,
-    input  logic [N_NEURONS-1:0][WIDTH-1:0] weights,
+    input  wire logic [N_NEURONS-1:0][WIDTH-1:0] weights,
     output logic [N_NEURONS-1:0] spikes
 );
 
