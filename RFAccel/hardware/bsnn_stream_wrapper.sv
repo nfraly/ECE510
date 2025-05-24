@@ -52,12 +52,12 @@ module bsnn_stream_wrapper_fifo #(
             end
 
             // Output consumed
-            if (valid_pipeline[NUM_LAYERS-1]) begin
+            if (valid_out && ready_out) begin
                 processing <= 0;
             end
 
             // Launch next processing stage from FIFO if ready
-            if (!processing && count > 0) begin
+            if (!processing && (count > 0 || head != tail)) begin
                 current_input <= fifo[head];
                 head <= (head + 1) % FIFO_DEPTH;
                 count <= count - 1;
