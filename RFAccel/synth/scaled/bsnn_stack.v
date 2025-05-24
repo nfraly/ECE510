@@ -70,4 +70,3 @@ module bsnn_stack #(
     );
 
 endmodule
-

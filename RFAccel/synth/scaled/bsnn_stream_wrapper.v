@@ -85,4 +85,3 @@ module bsnn_stream_wrapper_fifo #(
     );
 
 endmodule
-

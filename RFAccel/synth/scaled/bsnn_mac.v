@@ -1,6 +1,7 @@
 
 module bsnn_mac #(
     parameter WIDTH = 256,
+    parameter COUNT_WIDTH = $clog2(WIDTH+1),
     parameter THRESHOLD = 128
 )(
     input  logic clk,
@@ -18,12 +19,15 @@ module bsnn_mac #(
     assign xor_result  = input_bits ^ weight_bits;
     assign xnor_result = ~xor_result;
 
-    function automatic int popcount(input logic [WIDTH-1:0] value);
-        int count = 0;
-        for (int i = 0; i < WIDTH; i++)
-            count += value[i];
-        return count;
-    endfunction
+
+// Synthesis-safe popcount function
+function [COUNT_WIDTH-1:0] popcount(input [WIDTH-1:0] value);
+    integer i;
+    popcount = 0;
+    for (i = 0; i < WIDTH; i = i + 1)
+        popcount = popcount + value[i];
+endfunction
+
 
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin

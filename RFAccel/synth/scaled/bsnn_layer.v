@@ -30,4 +30,3 @@ module bsnn_layer #(
     endgenerate
 
 endmodule
-

@@ -26,4 +26,3 @@ module bsnn_addmm_top #(
     );
 
 endmodule
-
