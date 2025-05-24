@@ -1,4 +1,3 @@
-
 module bsnn_stream_wrapper #(
     parameter WIDTH = 256,
     parameter N_NEURONS = 256,
@@ -23,20 +22,19 @@ module bsnn_stream_wrapper #(
 );
 
     logic processing;
-    logic start_valid;
+    logic [NUM_LAYERS-1:0] valid_pipeline;
     logic [N_NEURONS-1:0] final_spike_vector;
-    logic [7:0] valid_pipeline;
 
     // Ready when not processing
     assign ready_in = !processing;
     assign output_spikes = final_spike_vector;
     assign valid_out = valid_pipeline[NUM_LAYERS-1];
 
-    // Valid delay chain for control
+    // Valid delay chain
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             processing <= 0;
-            valid_pipeline <= 0;
+            valid_pipeline <= '0;
         end else begin
             if (valid_in && ready_in) begin
                 processing <= 1;
@@ -49,7 +47,6 @@ module bsnn_stream_wrapper #(
                 valid_pipeline[i] <= valid_pipeline[i-1];
             end
 
-            // End processing when last output has been accepted
             if (valid_out && ready_out) begin
                 processing <= 0;
             end
