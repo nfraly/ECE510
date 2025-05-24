@@ -32,47 +32,40 @@ module bsnn_stream_wrapper_fifo #(
     logic [N_NEURONS-1:0] final_spike_vector;
 
     assign ready_in = (count < FIFO_DEPTH);
-    assign output_spikes = final_spike_vector;
     assign valid_out = valid_pipeline[NUM_LAYERS-1];
+    assign output_spikes = final_spike_vector;
 
-    // FIFO logic and pipeline shift
-    logic launch;
-always_ff @(posedge clk or posedge rst) begin
-        launch <= 0;
+    // FIFO control and pipeline shifting
+    always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             head <= 0;
             tail <= 0;
             count <= 0;
-            valid_pipeline <= '0;
             processing <= 0;
+            valid_pipeline <= 0;
         end else begin
-            // Input to FIFO
+            // Shift the pipeline
+            valid_pipeline <= {valid_pipeline[NUM_LAYERS-2:0], 1'b0};
+
+            // Output fully processed input
+            if (valid_pipeline[NUM_LAYERS-1]) begin
+                processing <= 0;
+            end
+
+            // Input accepted into FIFO
             if (valid_in && ready_in) begin
                 fifo[tail] <= input_row;
                 tail <= (tail + 1) % FIFO_DEPTH;
                 count <= count + 1;
             end
 
-            // Output consumed
-            if (valid_out && ready_out) begin
-                processing <= 0;
-            end
-
-            // Launch next processing stage from FIFO if ready
+            // Launch a new pipeline row
             if (!processing && count > 0) begin
                 current_input <= fifo[head];
                 head <= (head + 1) % FIFO_DEPTH;
                 count <= count - 1;
+                valid_pipeline[0] <= 1;
                 processing <= 1;
-                valid_pipeline[0] <= launch;
-            end else begin
-                launch <= 0;
-                valid_pipeline[0] <= 0;
-            end
-
-            // Shift pipeline
-            for (int i = 1; i < NUM_LAYERS; i++) begin
-                valid_pipeline[i] <= valid_pipeline[i-1];
             end
         end
     end
@@ -92,5 +85,4 @@ always_ff @(posedge clk or posedge rst) begin
     );
 
 endmodule
-
 

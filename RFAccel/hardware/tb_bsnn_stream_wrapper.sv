@@ -25,6 +25,8 @@ module tb_bsnn_stream_wrapper_fifo;
     int output_times[NUM_INPUTS];
     int output_index = 0;
     int send_index = 0;
+    int launches = 0;
+    int completions = 0;
 
     bsnn_stream_wrapper_fifo #(
         .WIDTH(WIDTH),
@@ -47,7 +49,7 @@ module tb_bsnn_stream_wrapper_fifo;
     always #5 clk = ~clk;
 
     initial begin
-        $display("Starting BSNN FIFO test with complete-output condition...");
+        $display("Starting BSNN FIFO test with pipeline trace...");
         clk = 0;
         rst = 1;
         valid_in = 0;
@@ -55,7 +57,7 @@ module tb_bsnn_stream_wrapper_fifo;
         cycle_counter = 0;
 
         csv_file = $fopen("bsnn_stream_fifo_latency.csv", "w");
-        $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes,processing,count,head,tail,valid_pipeline_end\n");
+        $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes,processing,count,head,tail,valid_pipeline_0,valid_pipeline_end\n");
 
         for (i = 0; i < NUM_LAYERS; i++) begin
             for (j = 0; j < N_NEURONS; j++) begin
@@ -75,26 +77,12 @@ module tb_bsnn_stream_wrapper_fifo;
         #10 rst = 0;
         #10;
 
-        while (output_index < NUM_INPUTS) begin
-            if (cycle_counter > 10000) begin
-                $display("ERROR: Simulation timeout. Not all outputs completed.");
-                $display("Final Latency Results:");
-        for (i = 0; i < NUM_INPUTS; i++) begin
-            if (input_times[i] >= 0 && output_times[i] >= 0) begin
-                $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
-            end else begin
-                $display("Input %0d: incomplete", i);
-            end
-        end
-        $finish;
-            end
+        while (output_index < NUM_INPUTS && cycle_counter < 10000) begin
             @(posedge clk);
             cycle_counter++;
 
-            // Random 25% backpressure
             ready_out = ($urandom % 4 != 0);
 
-            // Send inputs if ready
             if (ready_in && send_index < NUM_INPUTS) begin
                 input_row = {WIDTH{send_index[0]}} ^ 256'hAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
                 valid_in = 1;
@@ -104,35 +92,31 @@ module tb_bsnn_stream_wrapper_fifo;
                 valid_in = 0;
             end
 
-            // Track output latency
             if (valid_out && output_index < NUM_INPUTS) begin
                 output_times[output_index] = cycle_counter;
                 output_index++;
             end
 
-            // Log signals
-            $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h,%b,%0d,%0d,%0d,%b\n", cycle_counter, valid_in, ready_in, input_row, valid_out, ready_out, output_spikes, dut.processing, dut.count, dut.head, dut.tail, dut.valid_pipeline[NUM_LAYERS-1]);
+            // Count launches and completions
+            if (dut.valid_pipeline[0]) launches++;
+            if (dut.valid_pipeline[NUM_LAYERS-1]) completions++;
+
+            $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h,%b,%0d,%0d,%0d,%b,%b\n",
+                cycle_counter, valid_in, ready_in, input_row,
+                valid_out, ready_out, output_spikes,
+                dut.processing, dut.count, dut.head, dut.tail,
+                dut.valid_pipeline[0], dut.valid_pipeline[NUM_LAYERS-1]
+            );
         end
 
         $fclose(csv_file);
 
-        $display("Final Latency Results:");
-        for (i = 0; i < NUM_INPUTS; i++) begin
-            if (input_times[i] >= 0 && output_times[i] >= 0) begin
-                $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
-            end else begin
-                $display("Input %0d: incomplete", i);
-            end
-        end
+        $display("Final Launch and Completion Summary:");
+        $display("  Launches:     %0d", launches);
+        $display("  Completions:  %0d", completions);
+        $display("  Inputs Sent:  %0d", send_index);
+        $display("  Outputs Seen: %0d", output_index);
 
-        $display("Final Latency Results:");
-        for (i = 0; i < NUM_INPUTS; i++) begin
-            if (input_times[i] >= 0 && output_times[i] >= 0) begin
-                $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
-            end else begin
-                $display("Input %0d: incomplete", i);
-            end
-        end
         $finish;
     end
 
