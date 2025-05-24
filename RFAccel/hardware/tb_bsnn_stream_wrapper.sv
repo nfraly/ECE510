@@ -35,13 +35,23 @@ module tb_bsnn_stream_wrapper_fifo;
     real throughput;
 
     integer io_trace_file;
-    initial begin
-        io_trace_file = $fopen("io_trace_log.csv", "w");
-        $fwrite(io_trace_file, "time,valid_in,ready_in,valid_out,ready_out\n");
+initial begin
+    io_trace_file = $fopen("io_trace_log.csv", "w");
+    $fwrite(io_trace_file, "time,valid_in,ready_in,valid_out,ready_out\n");
+    wait (completions == NUM_INPUTS);
+    $display("======== Throughput Report ========");
+    $display("Launched %0d inputs", NUM_INPUTS);
+    $display("Completed %0d outputs", completions);
+    if (completions > 0) begin
+        avg_latency = total_latency / completions;
+        throughput = 1e9 / avg_latency;
+        $display("Average latency: %0t ns", avg_latency);
+        $display("Estimated throughput: %0.2f inferences/sec", throughput);
+    end else begin
+        $display("No completions observed; throughput not available.");
     end
-
-    // Testbench-side ID FIFO (depth = NUM_INPUTS)
-    int id_fifo [NUM_INPUTS-1:0];
+    $finish;
+end
     int fifo_head = 0;
     int fifo_tail = 0;
 
@@ -49,7 +59,6 @@ module tb_bsnn_stream_wrapper_fifo;
         csv_file = $fopen("bsnn_throughput_log.csv", "w");
         $fwrite(csv_file, "input_id,time_sent,time_received,latency\n");
     end
-
     bsnn_stream_wrapper_fifo #(
         .WIDTH(WIDTH),
         .N_NEURONS(N_NEURONS),
@@ -120,7 +129,6 @@ module tb_bsnn_stream_wrapper_fifo;
 
             // Count launches and completions
             if (dut.valid_pipeline[0]) launches++;
-            if (dut.valid_pipeline[NUM_LAYERS-1]) completions++;
 
             $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h,%b,%0d,%0d,%0d,%b,%b\n",
                 cycle_counter, valid_in, ready_in, input_row,
@@ -143,18 +151,15 @@ module tb_bsnn_stream_wrapper_fifo;
     end else begin
         $display("No completions observed; throughput not available.");
     end
-        $finish;
     end
 
     always @(posedge clk) begin
         $fwrite(io_trace_file, "%0t,%0b,%0b,%0b,%0b\n", $time, valid_in, ready_in, valid_out, ready_out);
 
-
         if (!rst) begin
             if (valid_in && ready_in) begin
                 input_times[send_index] = $time;
 
-                id_fifo[fifo_tail] = send_index;
                 fifo_tail++;
 
                 send_index++;
@@ -164,9 +169,25 @@ module tb_bsnn_stream_wrapper_fifo;
             if (valid_out && ready_out) begin
 
             if (valid_out && ready_out) begin
-                completed_id = id_fifo[fifo_head];
         output_times[completed_id] = $time;
         total_latency += output_times[completed_id] - input_times[completed_id];
+        completions++;
+        if (completions == NUM_INPUTS) begin
+            for (int i = 0; i < NUM_INPUTS; i++) begin
+                if (output_times[i] > input_times[i]) begin
+                    total_latency += output_times[i] - input_times[i];
+                end
+            end
+            avg_latency = total_latency / completions;
+            throughput = 1e9 / avg_latency;
+            $display("======== Throughput Report ========");
+            $display("Launched %0d inputs", NUM_INPUTS);
+            $display("Completed %0d outputs", completions);
+            $display("Average latency: %0t ns", avg_latency);
+            $display("Estimated throughput: %0.2f inferences/sec", throughput);
+            $fclose(csv_file);
+            $finish;
+        end
                 fifo_head++;
 
         if (valid_out && ready_out) begin
@@ -178,18 +199,6 @@ module tb_bsnn_stream_wrapper_fifo;
             $time,
             latency);
 
-    completions++;
-    if (completions == NUM_INPUTS) begin
-        for (int idx = 0; idx < NUM_INPUTS; idx++) begin
-            if (output_times[idx] > input_times[idx]) begin
-                total_latency += output_times[idx] - input_times[idx];
-            end
-        end
-        avg_latency = total_latency / NUM_INPUTS;
-        throughput = 1e9 / avg_latency;
-        $fclose(csv_file);
-        $finish;
-    end
 end
                 $fwrite(csv_file, "%0d,%0t,%0t,%0d\n",
                         completed_id,
@@ -197,10 +206,44 @@ end
                         $time,
                         latency);
 
-
-                completions++;
-
             end
         end
     end
+initial begin
+    wait (completions == NUM_INPUTS);
+    for (int i = 0; i < NUM_INPUTS; i++) begin
+        if (output_times[i] > input_times[i]) begin
+            total_latency += output_times[i] - input_times[i];
+        end
+    end
+    avg_latency = total_latency / completions;
+    throughput = 1e9 / avg_latency;
+    $display("======== Throughput Report ========");
+    $display("Launched %0d inputs", NUM_INPUTS);
+    $display("Completed %0d outputs", completions);
+    $display("Average latency: %0t ns", avg_latency);
+    $display("Estimated throughput: %0.2f inferences/sec", throughput);
+    $fclose(csv_file);
+end
+reg [31:0] completion_count_prev = 0;
+reg [31:0] completion_idle_cycles = 0;
+
+always @(posedge clk) begin
+    if (completion_count_prev == completions) begin
+        completion_idle_cycles <= completion_idle_cycles + 1;
+    end else begin
+        completion_count_prev <= completions;
+        completion_idle_cycles <= 0;
+    end
+
+    if (completion_idle_cycles > 100000) begin
+        $display("Timeout reached: completions stalled.");
+        $display("======== Throughput Report ========");
+        $display("Launched %0d inputs", NUM_INPUTS);
+        $display("Completed %0d outputs", completions);
+        $display("Average latency: %0t ns", avg_latency);
+        $display("Estimated throughput: %0.2f inferences/sec", throughput);
+        $finish;
+    end
+end
 endmodule
