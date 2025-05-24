@@ -44,14 +44,14 @@ module tb_bsnn_stream_wrapper_fifo;
     always #5 clk = ~clk;
 
     initial begin
-        $display("Starting BSNN FIFO streaming test...");
+        $display("Starting extended FIFO streaming test...");
         clk = 0;
         rst = 1;
         valid_in = 0;
         ready_out = 1;
         cycle_counter = 0;
 
-        csv_file = $fopen("bsnn_stream_fifo_results.csv", "w");
+        csv_file = $fopen("bsnn_stream_fifo_results_extended.csv", "w");
         $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes\n");
 
         // Init weights
@@ -70,7 +70,7 @@ module tb_bsnn_stream_wrapper_fifo;
 
         send_index = 0;
 
-        for (cycle_counter = 0; cycle_counter < 300; cycle_counter++) begin
+        for (cycle_counter = 0; cycle_counter < 1000; cycle_counter++) begin
             @(posedge clk);
 
             // Simulate 25% backpressure randomly
@@ -92,7 +92,7 @@ module tb_bsnn_stream_wrapper_fifo;
         end
 
         $fclose(csv_file);
-        $display("FIFO streaming test completed. Results in bsnn_stream_fifo_results.csv.");
+        $display("Extended FIFO streaming test completed. Results in bsnn_stream_fifo_results_extended.csv.");
         $finish;
     end
 
