@@ -1,0 +1,16 @@
+# Yosys synthesis script for BSNN (SystemVerilog compatible)
+read_verilog -sv bsnn_addmm_top.v
+read_verilog -sv bsnn_layer.v
+read_verilog -sv bsnn_mac.v
+read_verilog -sv bsnn_stack.v
+read_verilog -sv bsnn_stack_parametric.v
+read_verilog -sv bsnn_stream_wrapper.v
+read_verilog -sv bsnn_top.v
+
+hierarchy -top bsnn_top
+proc; opt; fsm; opt; memory; opt
+techmap; opt
+abc -liberty /dev/null
+stat
+write_json bsnn_netlist.json
+

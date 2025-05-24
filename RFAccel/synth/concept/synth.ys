@@ -1,0 +1,14 @@
+
+read_verilog -sv bsnn_mac.sv
+read_verilog -sv bsnn_layer.sv
+read_verilog -sv bsnn_addmm_top.sv
+
+hierarchy -top bsnn_addmm_top
+
+proc; opt; flatten; opt
+synth -top bsnn_addmm_top
+
+stat
+write_verilog bsnn_addmm_top_synth.v
+write_json bsnn_addmm_top.json
+
