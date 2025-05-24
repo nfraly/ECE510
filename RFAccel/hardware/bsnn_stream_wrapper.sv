@@ -52,7 +52,7 @@ module bsnn_stream_wrapper_fifo #(
             end
 
             // Output consumed
-            if (valid_out && ready_out) begin
+            if (valid_pipeline[NUM_LAYERS-1]) begin
                 processing <= 0;
             end
 
@@ -89,4 +89,5 @@ module bsnn_stream_wrapper_fifo #(
     );
 
 endmodule
+
 
