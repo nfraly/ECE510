@@ -1,0 +1,4 @@
+vector_id,input_row,spike_vector,expected_spikes,cycles,result
+0,11010110,1011,1011,2,PASS
+1,00101100,0100,0100,2,PASS
+2,11110000,0011,0011,2,PASS

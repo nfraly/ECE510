@@ -1,4 +1,3 @@
-
 `timescale 1ns/1ps
 
 module bsnn_layer_tb;
@@ -13,6 +12,10 @@ module bsnn_layer_tb;
     logic [WIDTH-1:0] input_bits;
     logic [N_NEURONS-1:0][WIDTH-1:0] weights;
     logic [N_NEURONS-1:0] spikes;
+
+    logic [N_NEURONS-1:0] expected_spikes;
+    logic [WIDTH-1:0] xnor_result;
+    int i, j, match_count;
 
     bsnn_layer #(
         .WIDTH(WIDTH),
@@ -44,18 +47,31 @@ module bsnn_layer_tb;
         #10 rst = 0;
         #10 valid = 1;
         #10 valid = 0;
-
         #20;
 
-        $display("Spikes: %b", spikes);
+        for (i = 0; i < N_NEURONS; i++) begin
+            xnor_result = ~(input_bits ^ weights[i]);
 
-        if (spikes[0] !== 1) $error("Neuron 0 failed");
-        if (spikes[1] !== 1) $error("Neuron 1 failed");
-        if (spikes[2] !== 0) $error("Neuron 2 failed");
-        if (spikes[3] !== 1) $error("Neuron 3 failed");
+            match_count = 0;
+            for (j = 0; j < WIDTH; j++) begin
+                match_count += xnor_result[j];
+            end
 
-        $display("BSNN Layer Test completed.");
+            expected_spikes[i] = (match_count >= THRESHOLD);
+        end
+
+        $display("Spikes     : %b", spikes);
+        $display("Expected   : %b", expected_spikes);
+
+        if (spikes !== expected_spikes) begin
+            $display("ERROR: Spike output mismatch.");
+            $fatal;
+        end else begin
+            $display("PASS: Spike output matches expected.");
+        end
+
         $finish;
     end
 
 endmodule
+
