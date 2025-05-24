@@ -1,4 +1,3 @@
-
 module bsnn_stack #(
     parameter WIDTH = 256,
     parameter N_NEURONS = 256,
@@ -16,6 +15,20 @@ module bsnn_stack #(
 
     logic [N_NEURONS-1:0] spike_vector_0;
     logic [N_NEURONS-1:0] spike_vector_1;
+    logic valid_l0, valid_l1, valid_l2;
+
+    // Pipeline valid propagation
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            valid_l0 <= 0;
+            valid_l1 <= 0;
+            valid_l2 <= 0;
+        end else begin
+            valid_l0 <= valid;
+            valid_l1 <= valid_l0;
+            valid_l2 <= valid_l1;
+        end
+    end
 
     bsnn_addmm_top #(
         .WIDTH(WIDTH),
@@ -24,7 +37,7 @@ module bsnn_stack #(
     ) layer0 (
         .clk(clk),
         .rst(rst),
-        .valid(valid),
+        .valid(valid_l0),
         .input_row(input_row),
         .weight_matrix_flat(weight_matrix_0),
         .spike_vector(spike_vector_0)
@@ -37,7 +50,7 @@ module bsnn_stack #(
     ) layer1 (
         .clk(clk),
         .rst(rst),
-        .valid(valid),
+        .valid(valid_l1),
         .input_row(spike_vector_0),
         .weight_matrix_flat(weight_matrix_1),
         .spike_vector(spike_vector_1)
@@ -50,7 +63,7 @@ module bsnn_stack #(
     ) layer2 (
         .clk(clk),
         .rst(rst),
-        .valid(valid),
+        .valid(valid_l2),
         .input_row(spike_vector_1),
         .weight_matrix_flat(weight_matrix_2),
         .spike_vector(final_spike_vector)

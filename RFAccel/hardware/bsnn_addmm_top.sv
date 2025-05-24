@@ -1,3 +1,4 @@
+
 module bsnn_addmm_top #(
     parameter WIDTH = 256,
     parameter N_NEURONS = 256,
@@ -7,7 +8,7 @@ module bsnn_addmm_top #(
     input  logic rst,
     input  logic valid,
     input  logic [WIDTH-1:0] input_row,
-    input  wire logic [N_NEURONS-1:0][WIDTH-1:0] weight_matrix,
+    input  logic [WIDTH*N_NEURONS-1:0] weight_matrix_flat,
     output logic [N_NEURONS-1:0] spike_vector
 );
 
@@ -20,7 +21,7 @@ module bsnn_addmm_top #(
         .rst(rst),
         .valid(valid),
         .input_bits(input_row),
-        .weights(weight_matrix),
+        .weights_flat(weight_matrix_flat),
         .spikes(spike_vector)
     );
 
