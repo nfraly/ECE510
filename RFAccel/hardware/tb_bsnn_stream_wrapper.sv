@@ -55,7 +55,7 @@ module tb_bsnn_stream_wrapper_fifo;
         cycle_counter = 0;
 
         csv_file = $fopen("bsnn_stream_fifo_latency.csv", "w");
-        $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes\n");
+        $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes,processing,count,head,tail,valid_pipeline_end\n");
 
         for (i = 0; i < NUM_LAYERS; i++) begin
             for (j = 0; j < N_NEURONS; j++) begin
@@ -78,7 +78,15 @@ module tb_bsnn_stream_wrapper_fifo;
         while (output_index < NUM_INPUTS) begin
             if (cycle_counter > 10000) begin
                 $display("ERROR: Simulation timeout. Not all outputs completed.");
-                $finish;
+                $display("Final Latency Results:");
+        for (i = 0; i < NUM_INPUTS; i++) begin
+            if (input_times[i] >= 0 && output_times[i] >= 0) begin
+                $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
+            end else begin
+                $display("Input %0d: incomplete", i);
+            end
+        end
+        $finish;
             end
             @(posedge clk);
             cycle_counter++;
@@ -97,16 +105,13 @@ module tb_bsnn_stream_wrapper_fifo;
             end
 
             // Track output latency
-            if (valid_out && ready_out && output_index < NUM_INPUTS) begin
+            if (valid_out && output_index < NUM_INPUTS) begin
                 output_times[output_index] = cycle_counter;
                 output_index++;
             end
 
             // Log signals
-            $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h\n",
-                cycle_counter, valid_in, ready_in, input_row,
-                valid_out, ready_out, output_spikes
-            );
+            $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h,%b,%0d,%0d,%0d,%b\n", cycle_counter, valid_in, ready_in, input_row, valid_out, ready_out, output_spikes, dut.processing, dut.count, dut.head, dut.tail, dut.valid_pipeline[NUM_LAYERS-1]);
         end
 
         $fclose(csv_file);
@@ -120,6 +125,14 @@ module tb_bsnn_stream_wrapper_fifo;
             end
         end
 
+        $display("Final Latency Results:");
+        for (i = 0; i < NUM_INPUTS; i++) begin
+            if (input_times[i] >= 0 && output_times[i] >= 0) begin
+                $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
+            end else begin
+                $display("Input %0d: incomplete", i);
+            end
+        end
         $finish;
     end
 
