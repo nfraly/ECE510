@@ -3,16 +3,12 @@ read_verilog -sv bsnn_mac.sv
 read_verilog -sv bsnn_layer.sv
 read_verilog -sv bsnn_addmm_top.sv
 
-# Set top module
 hierarchy -top bsnn_addmm_top
 
-# Flatten, optimize, and synthesize
 proc; opt; flatten; opt
+synth -top bsnn_addmm_top
 
-# Report statistics
 stat
-
-# Write synthesized design
-write_json bsnn_addmm_top.json
 write_verilog bsnn_addmm_top_synth.v
+write_json bsnn_addmm_top.json
 
