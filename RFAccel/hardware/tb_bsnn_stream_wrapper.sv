@@ -27,8 +27,16 @@ module tb_bsnn_stream_wrapper_fifo;
     int send_index = 0;
     int launches = 0;
     int completions = 0;
+
+    integer io_trace_file;
+    initial begin
+        io_trace_file = $fopen("io_trace_log.csv", "w");
+        $fwrite(io_trace_file, "time,valid_in,ready_in,valid_out,ready_out\n");
+    end
+    int completed_id;
     int latency;
-    int completed_id;    
+    
+    
 
     // Testbench-side ID FIFO (depth = NUM_INPUTS)
     int id_fifo [NUM_INPUTS-1:0];
@@ -139,6 +147,11 @@ module tb_bsnn_stream_wrapper_fifo;
 
 
     always @(posedge clk) begin
+        $fwrite(io_trace_file, "%0t,%0b,%0b,%0b,%0b\n", $time, valid_in, ready_in, valid_out, ready_out);
+
+        $display("[ %0t ns ] valid_in=%0b, ready_in=%0b | valid_out=%0b, ready_out=%0b", 
+                 $time, valid_in, ready_in, valid_out, ready_out);
+
         if (!rst) begin
             if (valid_in && ready_in) begin
                 input_times[send_index] = $time;
@@ -155,7 +168,12 @@ module tb_bsnn_stream_wrapper_fifo;
                 
                 completed_id = id_fifo[fifo_head];
                 fifo_head++;
-                latency = $time - input_times[completed_id];
+                
+        $display("[ %0t ns ] valid_out=%0b, ready_out=%0b", $time, valid_out, ready_out);
+        if (valid_out && ready_out) begin
+            $display("[ %0t ns ] --> OUTPUT accepted, ID from FIFO: %0d", $time, completed_id);
+        end
+        latency = $time - input_times[completed_id];
                 $fwrite(csv_file, "%0d,%0t,%0t,%0d\n",
                         completed_id,
                         input_times[completed_id],
