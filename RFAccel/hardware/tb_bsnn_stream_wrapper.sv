@@ -47,7 +47,7 @@ module tb_bsnn_stream_wrapper_fifo;
     always #5 clk = ~clk;
 
     initial begin
-        $display("Starting BSNN FIFO test with latency tracking...");
+        $display("Starting BSNN FIFO test with complete-output condition...");
         clk = 0;
         rst = 1;
         valid_in = 0;
@@ -75,13 +75,18 @@ module tb_bsnn_stream_wrapper_fifo;
         #10 rst = 0;
         #10;
 
-        for (cycle_counter = 0; cycle_counter < 1000; cycle_counter++) begin
+        while (output_index < NUM_INPUTS) begin
+            if (cycle_counter > 10000) begin
+                $display("ERROR: Simulation timeout. Not all outputs completed.");
+                $finish;
+            end
             @(posedge clk);
+            cycle_counter++;
 
-            // Backpressure 25% of time
+            // Random 25% backpressure
             ready_out = ($urandom % 4 != 0);
 
-            // Input logic
+            // Send inputs if ready
             if (ready_in && send_index < NUM_INPUTS) begin
                 input_row = {WIDTH{send_index[0]}} ^ 256'hAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
                 valid_in = 1;
@@ -91,13 +96,13 @@ module tb_bsnn_stream_wrapper_fifo;
                 valid_in = 0;
             end
 
-            // Log output time if new valid
+            // Track output latency
             if (valid_out && ready_out && output_index < NUM_INPUTS) begin
                 output_times[output_index] = cycle_counter;
                 output_index++;
             end
 
-            // Cycle log
+            // Log signals
             $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h\n",
                 cycle_counter, valid_in, ready_in, input_row,
                 valid_out, ready_out, output_spikes
@@ -106,7 +111,7 @@ module tb_bsnn_stream_wrapper_fifo;
 
         $fclose(csv_file);
 
-        $display("Latency results (input -> output):");
+        $display("Final Latency Results:");
         for (i = 0; i < NUM_INPUTS; i++) begin
             if (input_times[i] >= 0 && output_times[i] >= 0) begin
                 $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
