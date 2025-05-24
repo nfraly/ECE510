@@ -35,7 +35,7 @@ module bsnn_stream_wrapper_fifo #(
     assign output_spikes = final_spike_vector;
     assign valid_out = valid_pipeline[NUM_LAYERS-1];
 
-    // FIFO input logic
+    // FIFO logic
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             head <= 0;
@@ -48,33 +48,30 @@ module bsnn_stream_wrapper_fifo #(
                 count <= count + 1;
             end
 
-            if (valid_pipeline[0]) begin
-                count <= count - 1;
+            // Pull new data from FIFO only when current pipeline is finished
+            if (valid_out && ready_out) begin
+                processing <= 0;
+            end
+
+            if (!processing && count > 0) begin
+                current_input <= fifo[head];
                 head <= (head + 1) % FIFO_DEPTH;
+                count <= count - 1;
+                processing <= 1;
+                valid_pipeline[0] <= 1;
+            end else begin
+                valid_pipeline[0] <= 0;
             end
         end
     end
 
-    // Valid pipeline and core triggering
+    // Pipeline shift
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            processing <= 0;
             valid_pipeline <= '0;
         end else begin
-            if (count > 0 && !processing) begin
-                processing <= 1;
-                valid_pipeline[0] <= 1;
-                current_input <= fifo[head];
-            end else begin
-                valid_pipeline[0] <= 0;
-            end
-
             for (int i = 1; i < NUM_LAYERS; i++) begin
                 valid_pipeline[i] <= valid_pipeline[i-1];
-            end
-
-            if (valid_out && ready_out) begin
-                processing <= 0;
             end
         end
     end
