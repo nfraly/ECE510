@@ -27,6 +27,22 @@ module tb_bsnn_stream_wrapper_fifo;
     int send_index = 0;
     int launches = 0;
     int completions = 0;
+    int latency;
+    int completed_id;    
+
+    // Testbench-side ID FIFO (depth = NUM_INPUTS)
+    int id_fifo [NUM_INPUTS-1:0];
+    int fifo_head = 0;
+    int fifo_tail = 0;
+    
+    
+    
+    
+
+    initial begin
+        csv_file = $fopen("bsnn_throughput_log.csv", "w");
+        $fwrite(csv_file, "input_id,time_sent,time_received,latency\n");
+    end
 
     bsnn_stream_wrapper_fifo #(
         .WIDTH(WIDTH),
@@ -120,5 +136,39 @@ module tb_bsnn_stream_wrapper_fifo;
         $finish;
     end
 
-endmodule
 
+
+    always @(posedge clk) begin
+        if (!rst) begin
+            if (valid_in && ready_in) begin
+                input_times[send_index] = $time;
+                
+                id_fifo[fifo_tail] = send_index;
+                fifo_tail++;
+
+                $display("Input %0d sent at %0t", send_index, $time);
+                send_index++;
+                launches++;
+            end
+
+            if (valid_out && ready_out) begin
+                
+                completed_id = id_fifo[fifo_head];
+                fifo_head++;
+                latency = $time - input_times[completed_id];
+                $fwrite(csv_file, "%0d,%0t,%0t,%0d\n",
+                        completed_id,
+                        input_times[completed_id],
+                        $time,
+                        latency);
+                $display("Completed input ID %0d at time %0t", completed_id, $time);
+                $display("Output %0d received at %0t (latency = %0d)", 
+                         completed_id, $time, latency);
+
+                completions++;
+
+                
+            end
+        end
+    end
+endmodule
