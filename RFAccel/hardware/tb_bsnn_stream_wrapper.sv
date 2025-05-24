@@ -20,8 +20,11 @@ module tb_bsnn_stream_wrapper_fifo;
 
     int i, j, k;
     int csv_file;
-    int send_index;
     int cycle_counter;
+    int input_times[NUM_INPUTS];
+    int output_times[NUM_INPUTS];
+    int output_index = 0;
+    int send_index = 0;
 
     bsnn_stream_wrapper_fifo #(
         .WIDTH(WIDTH),
@@ -44,17 +47,16 @@ module tb_bsnn_stream_wrapper_fifo;
     always #5 clk = ~clk;
 
     initial begin
-        $display("Starting extended FIFO streaming test...");
+        $display("Starting BSNN FIFO test with latency tracking...");
         clk = 0;
         rst = 1;
         valid_in = 0;
         ready_out = 1;
         cycle_counter = 0;
 
-        csv_file = $fopen("bsnn_stream_fifo_results_extended.csv", "w");
+        csv_file = $fopen("bsnn_stream_fifo_latency.csv", "w");
         $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes\n");
 
-        // Init weights
         for (i = 0; i < NUM_LAYERS; i++) begin
             for (j = 0; j < N_NEURONS; j++) begin
                 for (k = 0; k < WIDTH; k++) begin
@@ -65,26 +67,37 @@ module tb_bsnn_stream_wrapper_fifo;
             end
         end
 
+        for (i = 0; i < NUM_INPUTS; i++) begin
+            input_times[i] = -1;
+            output_times[i] = -1;
+        end
+
         #10 rst = 0;
         #10;
-
-        send_index = 0;
 
         for (cycle_counter = 0; cycle_counter < 1000; cycle_counter++) begin
             @(posedge clk);
 
-            // Simulate 25% backpressure randomly
+            // Backpressure 25% of time
             ready_out = ($urandom % 4 != 0);
 
-            // Provide inputs as long as FIFO accepts them
+            // Input logic
             if (ready_in && send_index < NUM_INPUTS) begin
                 input_row = {WIDTH{send_index[0]}} ^ 256'hAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
                 valid_in = 1;
+                input_times[send_index] = cycle_counter;
                 send_index++;
             end else begin
                 valid_in = 0;
             end
 
+            // Log output time if new valid
+            if (valid_out && ready_out && output_index < NUM_INPUTS) begin
+                output_times[output_index] = cycle_counter;
+                output_index++;
+            end
+
+            // Cycle log
             $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h\n",
                 cycle_counter, valid_in, ready_in, input_row,
                 valid_out, ready_out, output_spikes
@@ -92,7 +105,16 @@ module tb_bsnn_stream_wrapper_fifo;
         end
 
         $fclose(csv_file);
-        $display("Extended FIFO streaming test completed. Results in bsnn_stream_fifo_results_extended.csv.");
+
+        $display("Latency results (input -> output):");
+        for (i = 0; i < NUM_INPUTS; i++) begin
+            if (input_times[i] >= 0 && output_times[i] >= 0) begin
+                $display("Input %0d: latency = %0d cycles", i, output_times[i] - input_times[i]);
+            end else begin
+                $display("Input %0d: incomplete", i);
+            end
+        end
+
         $finish;
     end
 
