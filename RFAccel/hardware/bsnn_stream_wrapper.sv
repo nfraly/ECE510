@@ -60,7 +60,7 @@ module bsnn_stream_wrapper_fifo #(
             end
 
             // Launch a new pipeline row
-            if (!processing && count > 0) begin
+            if (!processing && head != tail) begin
                 current_input <= fifo[head];
                 head <= (head + 1) % FIFO_DEPTH;
                 count <= count - 1;
