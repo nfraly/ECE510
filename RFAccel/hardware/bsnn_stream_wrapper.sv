@@ -1,8 +1,9 @@
-module bsnn_stream_wrapper #(
+module bsnn_stream_wrapper_fifo #(
     parameter WIDTH = 256,
     parameter N_NEURONS = 256,
     parameter THRESHOLD = 128,
-    parameter NUM_LAYERS = 24
+    parameter NUM_LAYERS = 24,
+    parameter FIFO_DEPTH = 16
 )(
     input  logic clk,
     input  logic rst,
@@ -21,24 +22,49 @@ module bsnn_stream_wrapper #(
     input  logic [NUM_LAYERS*WIDTH*N_NEURONS-1:0] weight_matrix_flat_array
 );
 
+    logic [WIDTH-1:0] fifo [FIFO_DEPTH-1:0];
+    logic [$clog2(FIFO_DEPTH)-1:0] head, tail;
+    logic [FIFO_DEPTH:0] count;
+
+    logic [WIDTH-1:0] current_input;
     logic processing;
     logic [NUM_LAYERS-1:0] valid_pipeline;
     logic [N_NEURONS-1:0] final_spike_vector;
 
-    // Ready when not processing
-    assign ready_in = !processing;
+    assign ready_in = (count < FIFO_DEPTH);
     assign output_spikes = final_spike_vector;
     assign valid_out = valid_pipeline[NUM_LAYERS-1];
 
-    // Valid delay chain
+    // FIFO input logic
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            head <= 0;
+            tail <= 0;
+            count <= 0;
+        end else begin
+            if (valid_in && ready_in) begin
+                fifo[tail] <= input_row;
+                tail <= (tail + 1) % FIFO_DEPTH;
+                count <= count + 1;
+            end
+
+            if (valid_pipeline[0]) begin
+                count <= count - 1;
+                head <= (head + 1) % FIFO_DEPTH;
+            end
+        end
+    end
+
+    // Valid pipeline and core triggering
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             processing <= 0;
             valid_pipeline <= '0;
         end else begin
-            if (valid_in && ready_in) begin
+            if (count > 0 && !processing) begin
                 processing <= 1;
                 valid_pipeline[0] <= 1;
+                current_input <= fifo[head];
             end else begin
                 valid_pipeline[0] <= 0;
             end
@@ -62,7 +88,7 @@ module bsnn_stream_wrapper #(
         .clk(clk),
         .rst(rst),
         .valid(valid_pipeline[0]),
-        .input_row(input_row),
+        .input_row(current_input),
         .weight_matrix_flat_array(weight_matrix_flat_array),
         .final_spike_vector(final_spike_vector)
     );

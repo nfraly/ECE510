@@ -1,12 +1,12 @@
 `timescale 1ns/1ps
 
-module tb_bsnn_stream_wrapper_faulty;
+module tb_bsnn_stream_wrapper_fifo;
 
     parameter WIDTH = 256;
     parameter N_NEURONS = 256;
     parameter THRESHOLD = 128;
     parameter NUM_LAYERS = 24;
-    parameter NUM_INPUTS = 4;
+    parameter NUM_INPUTS = 8;
 
     logic clk;
     logic rst;
@@ -22,14 +22,13 @@ module tb_bsnn_stream_wrapper_faulty;
     int csv_file;
     int send_index;
     int cycle_counter;
-    bit output_checked = 0;
 
-    // Instantiate DUT
-    bsnn_stream_wrapper #(
+    bsnn_stream_wrapper_fifo #(
         .WIDTH(WIDTH),
         .N_NEURONS(N_NEURONS),
         .THRESHOLD(THRESHOLD),
-        .NUM_LAYERS(NUM_LAYERS)
+        .NUM_LAYERS(NUM_LAYERS),
+        .FIFO_DEPTH(16)
     ) dut (
         .clk(clk),
         .rst(rst),
@@ -45,18 +44,17 @@ module tb_bsnn_stream_wrapper_faulty;
     always #5 clk = ~clk;
 
     initial begin
-        $display("Starting streaming BSNN test with randomized backpressure...");
+        $display("Starting BSNN FIFO streaming test...");
         clk = 0;
         rst = 1;
         valid_in = 0;
         ready_out = 1;
         cycle_counter = 0;
 
-        // Open CSV
-        csv_file = $fopen("bsnn_stream_faulty_results.csv", "w");
+        csv_file = $fopen("bsnn_stream_fifo_results.csv", "w");
         $fwrite(csv_file, "cycle,valid_in,ready_in,input_row,valid_out,ready_out,output_spikes\n");
 
-        // Init weights with deterministic pattern
+        // Init weights
         for (i = 0; i < NUM_LAYERS; i++) begin
             for (j = 0; j < N_NEURONS; j++) begin
                 for (k = 0; k < WIDTH; k++) begin
@@ -72,13 +70,13 @@ module tb_bsnn_stream_wrapper_faulty;
 
         send_index = 0;
 
-        for (cycle_counter = 0; cycle_counter < 200; cycle_counter++) begin
+        for (cycle_counter = 0; cycle_counter < 300; cycle_counter++) begin
             @(posedge clk);
 
-            // Simulate randomized output backpressure (~25% chance of stalling)
-            ready_out = ($urandom % 4 != 0);  // 75% chance ready
+            // Simulate 25% backpressure randomly
+            ready_out = ($urandom % 4 != 0);
 
-            // Drive input if allowed and not done
+            // Provide inputs as long as FIFO accepts them
             if (ready_in && send_index < NUM_INPUTS) begin
                 input_row = {WIDTH{send_index[0]}} ^ 256'hAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
                 valid_in = 1;
@@ -87,7 +85,6 @@ module tb_bsnn_stream_wrapper_faulty;
                 valid_in = 0;
             end
 
-            // Log output
             $fwrite(csv_file, "%0d,%b,%b,%h,%b,%b,%h\n",
                 cycle_counter, valid_in, ready_in, input_row,
                 valid_out, ready_out, output_spikes
@@ -95,7 +92,7 @@ module tb_bsnn_stream_wrapper_faulty;
         end
 
         $fclose(csv_file);
-        $display("Streaming test with faults complete. Output written to bsnn_stream_faulty_results.csv.");
+        $display("FIFO streaming test completed. Results in bsnn_stream_fifo_results.csv.");
         $finish;
     end
 
