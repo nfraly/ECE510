@@ -36,7 +36,9 @@ module bsnn_stream_wrapper_fifo #(
     assign valid_out = valid_pipeline[NUM_LAYERS-1];
 
     // FIFO logic and pipeline shift
-    always_ff @(posedge clk or posedge rst) begin
+    logic launch;
+always_ff @(posedge clk or posedge rst) begin
+        launch <= 0;
         if (rst) begin
             head <= 0;
             tail <= 0;
@@ -57,13 +59,14 @@ module bsnn_stream_wrapper_fifo #(
             end
 
             // Launch next processing stage from FIFO if ready
-            if (!processing && (count > 0 || head != tail)) begin
+            if (!processing && count > 0) begin
                 current_input <= fifo[head];
                 head <= (head + 1) % FIFO_DEPTH;
                 count <= count - 1;
                 processing <= 1;
-                valid_pipeline[0] <= 1;
+                valid_pipeline[0] <= launch;
             end else begin
+                launch <= 0;
                 valid_pipeline[0] <= 0;
             end
 
