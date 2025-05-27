@@ -8,11 +8,11 @@ module bsnn_stack_parametric #(
     input  logic rst,
     input  logic valid,
     input  logic [WIDTH-1:0] input_row,
-    input  wire logic [(NUM_LAYERS)*(WIDTH*N_NEURONS)-1:0] weight_matrix_flat_array_flat,
+    input  logic [(NUM_LAYERS)*(WIDTH*N_NEURONS)-1:0] weight_matrix_flat_array,
     output logic [N_NEURONS-1:0] final_spike_vector
 );
 
-    logic [NUM_LAYERS-1:0*(N_NEURONS-1:0+1)-1:0] spike_vectors_flat /* flattened from [NUM_LAYERS-1:0][N_NEURONS-1:0] */;
+    logic [(NUM_LAYERS)*(N_NEURONS)-1:0] spike_vectors_flat; // flattened from [NUM_LAYERS][N_NEURONS]
     logic [NUM_LAYERS-1:0] valid_pipeline;
 
     // Generate valid delay pipeline
@@ -40,8 +40,8 @@ module bsnn_stack_parametric #(
                 .rst(rst),
                 .valid(valid_pipeline[i]),
                 .input_row(i == 0 ? input_row : spike_vectors[i-1]),
-                .weight_matrix_flat(weight_matrix_flat_array[i]),
-                .spike_vector(spike_vectors[i])
+                .weight_matrix_flat(weight_matrix_flat_array_flat[i]),
+                .spike_vector(spike_vectors_flat[i])
             );
         end
     endgenerate
@@ -49,3 +49,4 @@ module bsnn_stack_parametric #(
     assign final_spike_vector = spike_vectors[NUM_LAYERS-1];
 
 endmodule
+
