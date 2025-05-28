@@ -1,8 +1,9 @@
+
 module bsnn_stack_parametric #(
     parameter WIDTH = 256,
     parameter N_NEURONS = 256,
     parameter THRESHOLD = 128,
-    parameter NUM_LAYERS = 6
+    parameter NUM_LAYERS = 24
 )(
     input  logic clk,
     input  logic rst,
@@ -12,10 +13,10 @@ module bsnn_stack_parametric #(
     output logic [N_NEURONS-1:0] final_spike_vector
 );
 
-    logic [(NUM_LAYERS)*(N_NEURONS)-1:0] spike_vectors_flat; // flattened from [NUM_LAYERS][N_NEURONS]
+    logic [(NUM_LAYERS)*(N_NEURONS)-1:0] spike_vectors_flat;
     logic [NUM_LAYERS-1:0] valid_pipeline;
 
-    // Generate valid delay pipeline
+    // Valid pipeline shifting
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             valid_pipeline <= '0;
@@ -30,7 +31,6 @@ module bsnn_stack_parametric #(
     genvar i;
     generate
         for (i = 0; i < NUM_LAYERS; i++) begin : LAYER
-
             bsnn_addmm_top #(
                 .WIDTH(i == 0 ? WIDTH : N_NEURONS),
                 .N_NEURONS(N_NEURONS),
@@ -39,14 +39,14 @@ module bsnn_stack_parametric #(
                 .clk(clk),
                 .rst(rst),
                 .valid(valid_pipeline[i]),
-                .input_row(i == 0 ? input_row : spike_vectors[i-1]),
-                .weight_matrix_flat(weight_matrix_flat_array_flat[i]),
-                .spike_vector(spike_vectors_flat[i])
+                .input_row(i == 0 ? input_row : spike_vectors_flat[(i-1)*N_NEURONS +: N_NEURONS]),
+                .weight_matrix_flat(weight_matrix_flat_array[i*(WIDTH*N_NEURONS) +: (WIDTH*N_NEURONS)]),
+                .spike_vector(spike_vectors_flat[i*N_NEURONS +: N_NEURONS])
             );
         end
     endgenerate
 
-    assign final_spike_vector = spike_vectors[NUM_LAYERS-1];
+    assign final_spike_vector = spike_vectors_flat[(NUM_LAYERS-1)*N_NEURONS +: N_NEURONS];
 
 endmodule
 
