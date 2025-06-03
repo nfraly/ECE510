@@ -30,6 +30,7 @@ module bsnn_top_tb;
   initial begin
     $dumpfile("bsnn_top_tb.vcd");
     $dumpvars(0, bsnn_top_tb);
+    $dumpvars(1, bsnn_top_tb.uut);
 
     #20; rst = 0; #20;
 
