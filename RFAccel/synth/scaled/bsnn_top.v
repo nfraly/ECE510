@@ -22,7 +22,7 @@ module bsnn_top (
         .data_in(data_in),
         .valid_in(valid_in),
         .ready_out(ready_out),
-        .output_spikes(output_spikes),
+        .data_out(output_spikes),
         .valid_out(valid_out),
         .ready_in(ready_in)
     );
