@@ -13,6 +13,8 @@ module bsnn_mac #(
 );
 
     logic [WIDTH-1:0] weight_reg;
+    logic [WIDTH-1:0] xnor_result;
+    integer count;
 
     always_ff @(posedge clk or posedge rst) begin
         if (rst)
@@ -22,14 +24,11 @@ module bsnn_mac #(
     end
 
     always_comb begin
-        if (valid && !load) begin
-            logic [WIDTH-1:0] xnor_result = ~(input_bits ^ weight_reg);
-            integer count = 0;
-            for (int i = 0; i < WIDTH; i++) count += xnor_result[i];
-            spike = (count >= THRESHOLD);
-        end else begin
-            spike = 1'b0;
-        end
+        xnor_result = ~(input_bits ^ weight_reg);
+        count = 0;
+        for (integer i = 0; i < WIDTH; i = i + 1)
+            count += xnor_result[i];
+        spike = (valid && !load && count >= THRESHOLD);
     end
 
 endmodule

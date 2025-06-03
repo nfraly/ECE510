@@ -11,7 +11,7 @@ read_verilog -sv bsnn_addmm_top.v
 hierarchy -top bsnn_top
 
 # Elaborate and optimize
-proc; opt;
+proc; opt; flatten; opt;
 
 # Map to generic gates
 techmap; opt
