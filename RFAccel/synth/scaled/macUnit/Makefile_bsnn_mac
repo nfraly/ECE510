@@ -1,0 +1,8 @@
+all: sim
+
+sim:
+	vlog bsnn_mac.v tb_bsnn_mac.v
+	vsim -c -do "run -all; quit" tb_bsnn_mac
+
+clean:
+	rm -f transcript *.log *.vcd work
