@@ -1,0 +1,8 @@
+all: sim
+
+sim:
+	vlog -sv bsnn_mac.v bsnn_layer.v tb_bsnn_layer.v
+	vsim -c -do "run -all; quit" tb_bsnn_layer
+
+clean:
+	rm -f transcript *.log *.vcd work
