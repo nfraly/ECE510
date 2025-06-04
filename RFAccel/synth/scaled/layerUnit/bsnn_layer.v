@@ -1,4 +1,3 @@
-
 module bsnn_layer #(
     parameter WIDTH = 256,
     parameter N_NEURONS = 256,
@@ -17,8 +16,6 @@ module bsnn_layer #(
     genvar i;
     generate
         for (i = 0; i < N_NEURONS; i++) begin : neuron
-            logic sel = (load_idx == i);
-
             bsnn_mac #(
                 .WIDTH(WIDTH),
                 .THRESHOLD(THRESHOLD)
@@ -26,7 +23,7 @@ module bsnn_layer #(
                 .clk(clk),
                 .rst(rst),
                 .valid(valid),
-                .load(load && sel),
+                .load(load && (load_idx == i)),
                 .weight_input(weight_input),
                 .input_bits(input_bits),
                 .spike(spikes[i])

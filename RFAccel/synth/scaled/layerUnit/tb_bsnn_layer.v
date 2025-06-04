@@ -4,7 +4,7 @@ module tb_bsnn_layer;
 
     parameter WIDTH = 8;
     parameter N_NEURONS = 4;
-    parameter THRESHOLD = 5;
+    parameter THRESHOLD = 3;
 
     reg clk, rst, valid, load;
     reg [$clog2(N_NEURONS)-1:0] load_idx;
