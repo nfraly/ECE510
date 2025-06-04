@@ -35,7 +35,7 @@ module bsnn_mac #(
                 weight_reg <= weight_input;
 
             acc_reg <= acc_comb;
-            spike <= (valid && acc_comb >= THRESHOLD);
+            spike <= (valid && acc_reg >= THRESHOLD);
         end
     end
 

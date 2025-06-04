@@ -13,6 +13,8 @@ module bsnn_layer #(
     output logic [N_NEURONS-1:0] spikes
 );
 
+    logic [N_NEURONS-1:0] spike_raw;
+
     genvar i;
     generate
         for (i = 0; i < N_NEURONS; i++) begin : neuron
@@ -26,10 +28,19 @@ module bsnn_layer #(
                 .load(load && (load_idx == i)),
                 .weight_input(weight_input),
                 .input_bits(input_bits),
-                .spike(spikes[i])
+                .spike(spike_raw[i])
             );
         end
     endgenerate
 
+
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst)
+            spikes <= '0;
+        else if (valid)
+            spikes <= spike_raw;
+    end
+
 endmodule
+
 
