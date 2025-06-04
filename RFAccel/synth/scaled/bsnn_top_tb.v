@@ -2,57 +2,84 @@
 
 module bsnn_top_tb;
 
-  reg clk = 0;
-  reg rst = 1;
-  reg valid_in = 0;
-  reg [31:0] data_in = 0;
-  wire ready_out;
-  wire valid_out;
-  wire [31:0] data_out;
+  // Clock and reset
+  logic clk;
+  logic rst;
 
-  // Instantiate DUT
-  bsnn_top uut (
-    .clk(clk),
-    .rst(rst),
-    .valid_in(valid_in),
-    .data_in(data_in),
-    .ready_in(1'b1),           // Fixed: added missing port
-    .ready_out(ready_out),
-    .valid_out(valid_out),
-    .data_out(data_out)
-  );
+  // Top-level DUT IO
+  logic in_valid, in_ready;
+  logic [31:0] in_data;
+  logic out_valid, out_ready;
+  logic [31:0] out_data;
 
   // Clock generation
   always #5 clk = ~clk;
 
-  integer cycle_count = 0;
+  // DUT instantiation
+  bsnn_top dut (
+    .clk       (clk),
+    .rst       (rst),
+    .in_valid  (in_valid),
+    .in_ready  (in_ready),
+    .in_data   (in_data),
+    .out_valid (out_valid),
+    .out_ready (out_ready),
+    .out_data  (out_data)
+  );
+
+  // File handle (optional)
+  // integer fd;
 
   initial begin
-    $dumpfile("bsnn_top_tb.vcd");
-    $dumpvars(0);
-    $display("Started");
-    #20; rst = 0; #20;
+    $display(">>> Simulation started at %0t", $time);
 
-    // Apply one input
-    valid_in = 1;
-    data_in = 32'hDEADBEEF;
-    #10;
-    valid_in = 0;
-    data_in = 32'h0;
+    clk = 0;
+    rst = 1;
+    in_valid = 0;
+    in_data = 0;
+    out_ready = 1;
 
-    // Wait for output with timeout
-    while (!valid_out && cycle_count < 1000) begin
-      @(posedge clk);
-      cycle_count++;
-      if (valid_out)
-        $display("Output received: %h at cycle %0d", data_out, cycle_count);
-    end
+    // fd = $fopen("bsnn_sim.log", "w");
 
-    if (!valid_out) begin
-      $display("TIMEOUT: valid_out never went high.");
-    end
+    #20;
+    rst = 0;
+    $display(">>> Reset deasserted at %0t", $time);
 
+    // Send input vector (example pattern)
+    repeat (5) @(posedge clk); // wait a few cycles
+
+    in_valid = 1;
+    in_data = 32'hCAFEBABE;
+    $display("[TB] Sending input data: %h at %0t", in_data, $time);
+    @(posedge clk);
+
+    in_valid = 0;
+
+    // Wait and observe output
+    repeat (100) @(posedge clk);
+    $display(">>> Simulation ending at %0t", $time);
+    // $fclose(fd);
     $finish;
+  end
+
+  // Monitor output
+  always_ff @(posedge clk) begin
+    if (!rst && out_valid && out_ready) begin
+      $display("[TB] Output data received: %h at %0t", out_data, $time);
+      // $fwrite(fd, "Output received: %h at %0t\n", out_data, $time);
+    end
+  end
+
+  // Internal trace (via hierarchical access)
+  always_ff @(posedge clk) begin
+    if (!rst) begin
+      $display("[TRACE] layer_idx=%0d byte_count=%0d load_idx=%0d valid_pipeline=%b time=%0t",
+        dut.wrapper.layer_idx,
+        dut.wrapper.byte_count,
+        dut.wrapper.load_idx,
+        dut.wrapper.valid_pipeline,
+        $time);
+    end
   end
 
 endmodule
