@@ -5,11 +5,16 @@ module tb_bsnn_layer;
     parameter WIDTH = 8;
     parameter N_NEURONS = 4;
     parameter THRESHOLD = 3;
+    parameter N_TESTS = 200;
 
     reg clk, rst, valid, load;
     reg [$clog2(N_NEURONS)-1:0] load_idx;
     reg [WIDTH-1:0] weight_input, input_bits;
     wire [N_NEURONS-1:0] spikes;
+
+    integer i, j, errors, passes;
+    reg [WIDTH-1:0] weights [0:N_NEURONS-1];
+    integer fd;
 
     bsnn_layer #(
         .WIDTH(WIDTH),
@@ -30,46 +35,57 @@ module tb_bsnn_layer;
     always #5 clk = ~clk;
 
     initial begin
-        $display("Time | Input      | Spikes");
-        $display("-------------------------------");
-
-        // Initialize
+        fd = $fopen("layer_test_output.txt", "w");
         clk = 0;
         rst = 1;
         valid = 0;
         load = 0;
-        input_bits = 0;
         weight_input = 0;
+        input_bits = 0;
         load_idx = 0;
+        errors = 0;
+        passes = 0;
         #10;
-
         rst = 0;
 
-        // Load weights into all neurons
-        load_weights(0, 8'b11011011); // 6 matches expected
-        load_weights(1, 8'b11110000); // 4 matches expected
-        load_weights(2, 8'b00001111); // 4 matches expected
-        load_weights(3, 8'b11111111); // 7 matches expected
+        for (i = 0; i < N_TESTS; i = i + 1) begin
+            // Randomly generate weights for all neurons
+            for (j = 0; j < N_NEURONS; j = j + 1) begin
+                weights[j] = $random;
+                load_weights(j, weights[j]);
+            end
 
-        // Apply first input
-        @(negedge clk);
-        valid = 1;
-        input_bits = 8'b11011111;
-        @(negedge clk);
-        $display("%4t | %b | %b", $time, input_bits, spikes);
+            // Random input bits
+            input_bits = $random;
+            @(negedge clk);
+            valid = 1;
+            @(negedge clk);
+            valid = 0;
 
-        // Apply second input
-        input_bits = 8'b11111111;  // max match for all
-        @(negedge clk);
-        $display("%4t | %b | %b", $time, input_bits, spikes);
+            // Check spike outputs
+            for (j = 0; j < N_NEURONS; j = j + 1) begin
+                integer expected, actual;
+                expected = popcount(weights[j] & input_bits) >= THRESHOLD;
+                actual = spikes[j];
+                if (actual !== expected) begin
+                    errors = errors + 1;
+                    $fwrite(fd, "FAIL @%0t NEURON[%0d] | w=%b in=%b -> exp=%0d got=%0d\n",
+                            $time, j, weights[j], input_bits, expected, actual);
+                end else begin
+                    passes = passes + 1;
+                end
+            end
 
-        // Reset
-        valid = 0;
-        rst = 1;
-        @(negedge clk);
-        rst = 0;
-        @(negedge clk);
+            // Reset layer between tests
+            rst = 1;
+            @(negedge clk);
+            rst = 0;
+        end
 
+        $display("SUMMARY: %0d passes / %0d errors out of %0d trials", passes, errors, passes + errors);
+        $fwrite(fd, "SUMMARY: %0d passes / %0d errors out of %0d trials\n",
+                        passes, errors, passes + errors);
+        $fclose(fd);
         $finish;
     end
 
@@ -84,4 +100,14 @@ module tb_bsnn_layer;
         end
     endtask
 
+    function integer popcount(input [WIDTH-1:0] x);
+        integer k;
+        begin
+            popcount = 0;
+            for (k = 0; k < WIDTH; k = k + 1)
+                popcount = popcount + x[k];
+        end
+    endfunction
+
 endmodule
+
