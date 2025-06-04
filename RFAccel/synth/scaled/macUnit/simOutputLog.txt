@@ -1,13 +1,13 @@
 vlog -sv bsnn_mac.v tb_bsnn_mac.v
 QuestaSim-64 vlog 2021.3_1 Compiler 2021.08 Aug 15 2021
-Start time: 23:51:40 on Jun 03,2025
+Start time: 01:07:01 on Jun 04,2025
 vlog -sv bsnn_mac.v tb_bsnn_mac.v 
 -- Compiling module bsnn_mac
 -- Compiling module tb_bsnn_mac
 
 Top level modules:
 	tb_bsnn_mac
-End time: 23:51:40 on Jun 03,2025, Elapsed time: 0:00:00
+End time: 01:07:01 on Jun 04,2025, Elapsed time: 0:00:00
 Errors: 0, Warnings: 0
 vsim -c -do "run -all; quit" tb_bsnn_mac
 Reading pref.tcl
@@ -15,7 +15,7 @@ Reading pref.tcl
 # 2021.3_1
 
 # vsim -c -do "run -all; quit" tb_bsnn_mac 
-# Start time: 23:51:42 on Jun 03,2025
+# Start time: 01:07:02 on Jun 04,2025
 # ** Note: (vsim-3813) Design is being optimized due to module recompilation...
 # //  Questa Sim-64
 # //  Version 2021.3_1 linux_x86_64 Aug 15 2021
@@ -34,10 +34,10 @@ Reading pref.tcl
 # Loading sv_std.std
 # Loading work.tb_bsnn_mac(fast)
 # run -all
-# DEBUG @ 15000: acc_comb=8 acc_reg=0 valid_d=0 spike=0
-# DEBUG @ 25000: acc_comb=2 acc_reg=8 valid_d=0 spike=0
-# DEBUG @ 35000: acc_comb=2 acc_reg=2 valid_d=0 spike=0
-# DEBUG @ 45000: acc_comb=7 acc_reg=2 valid_d=0 spike=0
+# DEBUG @ 15000: acc_comb=8 acc_reg=0 valid=0 spike=0
+# DEBUG @ 25000: acc_comb=2 acc_reg=8 valid=0 spike=0
+# DEBUG @ 35000: acc_comb=2 acc_reg=2 valid=0 spike=0
+# DEBUG @ 45000: acc_comb=7 acc_reg=2 valid=1 spike=1
 # Time: 45000 | Case 1: One bit mismatch at position 5
 # Signals: rst=0 | valid=1 | load=0 | spike=0
 # -------------------------------------------------------------
@@ -57,10 +57,10 @@ Reading pref.tcl
 #   7 |   1   |   1   |   1
 # â Expected matches: 7
 # 
-# DEBUG @ 55000: acc_comb=4 acc_reg=7 valid_d=1 spike=1
-# DEBUG @ 65000: acc_comb=4 acc_reg=4 valid_d=1 spike=0
+# DEBUG @ 55000: acc_comb=4 acc_reg=7 valid=1 spike=0
+# DEBUG @ 65000: acc_comb=4 acc_reg=4 valid=1 spike=0
 # Time: 65000 | Case 2: Lower nibble mismatch
-# Signals: rst=0 | valid=1 | load=0 | spike=1
+# Signals: rst=0 | valid=1 | load=0 | spike=0
 # -------------------------------------------------------------
 # Weights   : 11011011
 # Inputs    : 11110000
@@ -78,10 +78,10 @@ Reading pref.tcl
 #   7 |   1   |   1   |   1
 # â Expected matches: 4
 # 
-# DEBUG @ 75000: acc_comb=8 acc_reg=4 valid_d=1 spike=0
-# DEBUG @ 85000: acc_comb=8 acc_reg=8 valid_d=1 spike=1
+# DEBUG @ 75000: acc_comb=8 acc_reg=4 valid=1 spike=1
+# DEBUG @ 85000: acc_comb=8 acc_reg=8 valid=1 spike=1
 # Time: 85000 | Case 3: Perfect match
-# Signals: rst=0 | valid=1 | load=0 | spike=0
+# Signals: rst=0 | valid=1 | load=0 | spike=1
 # -------------------------------------------------------------
 # Weights   : 11011011
 # Inputs    : 11011011
@@ -99,10 +99,10 @@ Reading pref.tcl
 #   7 |   1   |   1   |   1
 # â Expected matches: 8
 # 
-# DEBUG @ 95000: acc_comb=0 acc_reg=8 valid_d=1 spike=1
-# DEBUG @ 105000: acc_comb=0 acc_reg=0 valid_d=1 spike=0
+# DEBUG @ 95000: acc_comb=0 acc_reg=8 valid=1 spike=0
+# DEBUG @ 105000: acc_comb=0 acc_reg=0 valid=1 spike=0
 # Time: 105000 | Case 4: Complete mismatch
-# Signals: rst=0 | valid=1 | load=0 | spike=1
+# Signals: rst=0 | valid=1 | load=0 | spike=0
 # -------------------------------------------------------------
 # Weights   : 11011011
 # Inputs    : 00100100
@@ -120,10 +120,10 @@ Reading pref.tcl
 #   7 |   1   |   0   |   0
 # â Expected matches: 0
 # 
-# DEBUG @ 115000: acc_comb=7 acc_reg=0 valid_d=1 spike=0
-# DEBUG @ 125000: acc_comb=7 acc_reg=7 valid_d=1 spike=1
+# DEBUG @ 115000: acc_comb=7 acc_reg=0 valid=1 spike=1
+# DEBUG @ 125000: acc_comb=7 acc_reg=7 valid=1 spike=1
 # Time: 125000 | Case 5: One mismatch at bit 1
-# Signals: rst=0 | valid=1 | load=0 | spike=0
+# Signals: rst=0 | valid=1 | load=0 | spike=1
 # -------------------------------------------------------------
 # Weights   : 11011011
 # Inputs    : 11011001
@@ -143,5 +143,5 @@ Reading pref.tcl
 # 
 # ** Note: $finish    : tb_bsnn_mac.v(103)
 #    Time: 135 ns  Iteration: 0  Instance: /tb_bsnn_mac
-# End time: 23:51:44 on Jun 03,2025, Elapsed time: 0:00:02
+# End time: 01:07:04 on Jun 04,2025, Elapsed time: 0:00:02
 # Errors: 0, Warnings: 0
