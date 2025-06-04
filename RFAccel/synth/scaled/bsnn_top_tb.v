@@ -6,74 +6,73 @@ module bsnn_top_tb;
   logic clk;
   logic rst;
 
-  // Top-level DUT IO
-  logic in_valid, in_ready;
-  logic [31:0] in_data;
-  logic out_valid, out_ready;
-  logic [31:0] out_data;
+  // DUT IO signals
+  logic valid_in, ready_out;
+  logic [31:0] data_in;
+  logic valid_out, ready_in;
+  logic [31:0] data_out;
+
+  integer logfile;
 
   // Clock generation
   always #5 clk = ~clk;
 
   // DUT instantiation
   bsnn_top dut (
-    .clk       (clk),
-    .rst       (rst),
-    .in_valid  (in_valid),
-    .in_ready  (in_ready),
-    .in_data   (in_data),
-    .out_valid (out_valid),
-    .out_ready (out_ready),
-    .out_data  (out_data)
+    .clk        (clk),
+    .rst        (rst),
+    .valid_in   (valid_in),
+    .ready_out  (ready_out),
+    .data_in    (data_in),
+    .valid_out  (valid_out),
+    .ready_in   (ready_in),
+    .data_out   (data_out)
   );
 
-  // File handle (optional)
-  // integer fd;
-
+  // Main test sequence
   initial begin
-    $display(">>> Simulation started at %0t", $time);
+    logfile = $fopen("bsnn_tb_output.txt", "w");
+    $fdisplay(logfile, ">>> Simulation started at %0t", $time);
 
     clk = 0;
     rst = 1;
-    in_valid = 0;
-    in_data = 0;
-    out_ready = 1;
-
-    // fd = $fopen("bsnn_sim.log", "w");
+    valid_in = 0;
+    data_in = 0;
+    ready_in = 1;  // downstream always ready
 
     #20;
     rst = 0;
-    $display(">>> Reset deasserted at %0t", $time);
+    $fdisplay(logfile, ">>> Reset deasserted at %0t", $time);
 
-    // Send input vector (example pattern)
-    repeat (5) @(posedge clk); // wait a few cycles
+    // Wait a few cycles before sending input
+    repeat (5) @(posedge clk);
 
-    in_valid = 1;
-    in_data = 32'hCAFEBABE;
-    $display("[TB] Sending input data: %h at %0t", in_data, $time);
+    valid_in = 1;
+    data_in = 32'hCAFEBABE;
+    $fdisplay(logfile, "[TB] Sending input data: %h at %0t", data_in, $time);
     @(posedge clk);
 
-    in_valid = 0;
+    valid_in = 0;
 
-    // Wait and observe output
+    // Wait for output or timeout
     repeat (100) @(posedge clk);
-    $display(">>> Simulation ending at %0t", $time);
-    // $fclose(fd);
+    $fdisplay(logfile, ">>> Simulation ending at %0t", $time);
+    $fclose(logfile);
     $finish;
   end
 
   // Monitor output
   always_ff @(posedge clk) begin
-    if (!rst && out_valid && out_ready) begin
-      $display("[TB] Output data received: %h at %0t", out_data, $time);
-      // $fwrite(fd, "Output received: %h at %0t\n", out_data, $time);
+    if (!rst && valid_out && ready_in) begin
+      $fdisplay(logfile, "[TB] Output data received: %h at %0t", data_out, $time);
     end
   end
 
-  // Internal trace (via hierarchical access)
+  // Optional: internal signal tracing
   always_ff @(posedge clk) begin
     if (!rst) begin
-      $display("[TRACE] layer_idx=%0d byte_count=%0d load_idx=%0d valid_pipeline=%b time=%0t",
+      $fdisplay(logfile,
+        "[TRACE] layer_idx=%0d byte_count=%0d load_idx=%0d valid_pipeline=%b @ %0t",
         dut.wrapper.layer_idx,
         dut.wrapper.byte_count,
         dut.wrapper.load_idx,

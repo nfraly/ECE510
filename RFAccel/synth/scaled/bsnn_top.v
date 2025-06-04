@@ -16,7 +16,7 @@ module bsnn_top (
     logic         internal_valid_out;
 
     // Stream wrapper with output spike vector exposed
-    bsnn_stream_wrapper_fifo dut (
+    bsnn_stream_wrapper_fifo wrapper (
         .clk(clk),
         .rst(rst),
         .data_in(data_in),
