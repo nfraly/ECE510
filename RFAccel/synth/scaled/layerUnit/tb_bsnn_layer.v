@@ -5,7 +5,7 @@ module tb_bsnn_layer;
     parameter WIDTH = 8;
     parameter N_NEURONS = 4;
     parameter THRESHOLD = 3;
-    parameter N_TESTS = 200;
+    parameter N_TESTS = 500;
 
     reg clk, rst, valid, load;
     reg [$clog2(N_NEURONS)-1:0] load_idx;
@@ -57,10 +57,14 @@ module tb_bsnn_layer;
 
             // Random input bits
             input_bits = $random;
+
             @(negedge clk);
             valid = 1;
             @(negedge clk);
             valid = 0;
+
+            // Wait for spikes to register
+            @(negedge clk);
 
             // Check spike outputs
             for (j = 0; j < N_NEURONS; j = j + 1) begin
@@ -69,22 +73,26 @@ module tb_bsnn_layer;
                 actual = spikes[j];
                 if (actual !== expected) begin
                     errors = errors + 1;
-                    $fwrite(fd, "FAIL @%0t NEURON[%0d] | w=%b in=%b -> exp=%0d got=%0d\n",
-                            $time, j, weights[j], input_bits, expected, actual);
+                    $fwrite(fd,
+                        "FAIL @%0t NEURON[%0d] | w=%b in=%b -> acc=%0d spike_raw=%0d exp=%0d got=%0d valid=%0d\n",
+                        $time, j, weights[j], input_bits,
+                        dut.neuron[j].mac.acc_reg,
+                        dut.spike_raw[j],
+                        expected, actual, valid);
                 end else begin
                     passes = passes + 1;
                 end
             end
 
-            // Reset layer between tests
+            // Reset between tests
             rst = 1;
             @(negedge clk);
             rst = 0;
         end
 
-        $display("SUMMARY: %0d passes / %0d errors out of %0d trials", passes, errors, passes + errors);
         $fwrite(fd, "SUMMARY: %0d passes / %0d errors out of %0d trials\n",
                         passes, errors, passes + errors);
+        $display("SUMMARY: %0d passes / %0d errors out of %0d trials", passes, errors, passes + errors);
         $fclose(fd);
         $finish;
     end

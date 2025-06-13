@@ -34,6 +34,7 @@ module bsnn_layer #(
     endgenerate
 
 
+   
     always_ff @(posedge clk or posedge rst) begin
         if (rst)
             spikes <= '0;
@@ -41,6 +42,6 @@ module bsnn_layer #(
             spikes <= spike_raw;
     end
 
+ 
 endmodule
-
 

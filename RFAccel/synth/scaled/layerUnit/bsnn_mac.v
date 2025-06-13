@@ -35,9 +35,14 @@ module bsnn_mac #(
                 weight_reg <= weight_input;
 
             acc_reg <= acc_comb;
-            spike <= (valid && acc_reg >= THRESHOLD);
+            spike <= (valid && acc_comb >= THRESHOLD);
         end
+    
+    if (valid) begin
+        $display("MAC DEBUG @%0t: acc_reg=%0d threshold=%0d -> spike=%0d", $time, acc_reg, THRESHOLD, spike);
+    end
     end
 
 endmodule
+
 
