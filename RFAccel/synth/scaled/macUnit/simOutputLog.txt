@@ -1,0 +1,45 @@
+vlog -sv bsnn_mac.v tb_bsnn_mac.v
+QuestaSim-64 vlog 2021.3_1 Compiler 2021.08 Aug 15 2021
+Start time: 01:28:16 on Jun 04,2025
+vlog -sv bsnn_mac.v tb_bsnn_mac.v 
+-- Compiling module bsnn_mac
+-- Compiling module tb_bsnn_mac
+
+Top level modules:
+	tb_bsnn_mac
+End time: 01:28:16 on Jun 04,2025, Elapsed time: 0:00:00
+Errors: 0, Warnings: 0
+vsim -c -do "run -all; quit" tb_bsnn_mac
+Reading pref.tcl
+
+# 2021.3_1
+
+# vsim -c -do "run -all; quit" tb_bsnn_mac 
+# Start time: 01:28:17 on Jun 04,2025
+# ** Note: (vsim-3813) Design is being optimized due to module recompilation...
+# //  Questa Sim-64
+# //  Version 2021.3_1 linux_x86_64 Aug 15 2021
+# //
+# //  Copyright 1991-2021 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  QuestaSim and its associated documentation contain trade
+# //  secrets and commercial or financial information that are the property of
+# //  Mentor Graphics Corporation and are privileged, confidential,
+# //  and exempt from disclosure under the Freedom of Information Act,
+# //  5 U.S.C. Section 552. Furthermore, this information
+# //  is prohibited from disclosure under the Trade Secrets Act,
+# //  18 U.S.C. Section 1905.
+# //
+# Loading sv_std.std
+# Loading work.tb_bsnn_mac(fast)
+# run -all
+# 
+# SUMMARY:
+# Total tests  : 256
+# Passed       : 256
+# Failed       : 0
+# ** Note: $finish    : tb_bsnn_mac.v(84)
+#    Time: 12815 ns  Iteration: 1  Instance: /tb_bsnn_mac
+# End time: 01:28:19 on Jun 04,2025, Elapsed time: 0:00:02
+# Errors: 0, Warnings: 0

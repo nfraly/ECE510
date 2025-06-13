@@ -1,0 +1,9 @@
+all: sim
+
+sim:
+	vlog -sv bsnn_mac.v bsnn_layer.v bsnn_addmm_top.v tb_bsnn_addmm_top.v
+	vsim -c -do "run -all; quit" tb_bsnn_addmm_top
+
+clean:
+	rm -f transcript *.log *.vcd work
+

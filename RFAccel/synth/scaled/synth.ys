@@ -1,0 +1,27 @@
+# Read full BSNN design in SystemVerilog
+read_verilog -sv bsnn_mac.v
+read_verilog -sv bsnn_layer.v
+read_verilog -sv bsnn_stack.v
+read_verilog -sv bsnn_stack_parametric.v
+read_verilog -sv bsnn_stream_wrapper.v
+read_verilog -sv bsnn_top.v
+read_verilog -sv bsnn_addmm_top.v
+
+# Set top module (assuming parametric version is desired)
+hierarchy -top bsnn_top
+
+# Elaborate and optimize
+proc; opt; flatten; opt;
+
+# Map to generic gates
+techmap; opt
+
+# Perform ABC logic optimization
+abc; opt
+
+# Display estimated area and logic depth using CMOS model
+stat -tech cmos
+
+# Save results
+write_verilog bsnn_synth_netlist.v
+write_json bsnn_synth_netlist.json
